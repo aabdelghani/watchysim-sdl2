@@ -24,6 +24,7 @@
 #include "WatchFaces/DrawTest/Watchy_Draw_Test.h"
 #include "WatchFaces/MacPaint/Watchy_MacPaint.h"
 #include "WatchFaces/Mario/Watchy_Mario.h"
+#include "WatchFaces/Multiday/Watchy_Multiday.h"
 #include "WatchFaces/Niobe/niobe.h"
 #include "WatchFaces/Pokemon/Watchy_Pokemon.h"
 #include "WatchFaces/PowerShell/Watchy_PowerShell.h"
@@ -78,7 +79,7 @@ private:
 class MainWindow : public QMainWindow {
 public:
     MainWindow() {
-        loadFace(new Watchy7SEG());
+        loadFace(new WatchyMultiday());
 
         view = new WatchyView(this);
         setCentralWidget(view);
@@ -94,12 +95,8 @@ public:
         connect(timer, &QTimer::timeout, this, [this]() {
             time_t t = time(nullptr);
             struct tm tm_now; localtime_r(&t, &tm_now);
-            int newMinute = tm_now.tm_min;
             watchy->setTime(tm_now);
-            if (newMinute != lastMinute) {
-                lastMinute = newMinute;
-                view->redraw();
-            }
+            view->redraw(); // animated faces advance their own state per redraw
         });
         timer->start(1000);
     }
@@ -244,6 +241,7 @@ private:
         addFace("DrawTest",      []{ return new WatchyDrawTest(); });
         addFace("MacPaint",      []{ return new WatchyMacPaint(); });
         addFace("Mario",         []{ return new WatchyMario(); });
+        addFace("Multiday",      []{ return new WatchyMultiday(); });
         addFace("Niobe",         []{ return new Niobe(); });
         addFace("Pokemon",       []{ return new WatchyPokemon(); });
         addFace("PowerShell",    []{ return new WatchyPowerShell(); });
@@ -282,6 +280,27 @@ private:
 
 int main(int argc, char **argv) {
     QApplication app(argc, argv);
+
+    // Headless dump mode: `--dump <face> <path.png>` renders a single face at
+    // 200x200 and exits. Used for pixel-level comparison against references.
+    for (int i = 1; i < argc; ++i) {
+        if (QString(argv[i]) == "--dump" && i + 2 < argc) {
+            std::unique_ptr<Watchy> w;
+            QString face = argv[i+1];
+            if      (face == "Multiday") w.reset(new WatchyMultiday());
+            else if (face == "7_SEG")    w.reset(new Watchy7SEG());
+            else { fprintf(stderr, "Unknown face: %s\n", qPrintable(face)); return 2; }
+            time_t t = time(nullptr);
+            struct tm tm_now; localtime_r(&t, &tm_now);
+            w->setTime(tm_now);
+            w->showWatchFace();
+            QImage img(w->display.getFramebuffer(),
+                       DISPLAY_WIDTH, DISPLAY_HEIGHT, DISPLAY_WIDTH * 3,
+                       QImage::Format_RGB888);
+            return img.save(argv[i+2], "PNG") ? 0 : 1;
+        }
+    }
+
     MainWindow w;
     w.show();
     return app.exec();
