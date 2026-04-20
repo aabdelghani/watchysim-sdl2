@@ -14,6 +14,11 @@
 #include <QImage>
 #include <QRegularExpression>
 #include <QDateTime>
+#include <QShortcut>
+#include <QKeySequence>
+#include <QWheelEvent>
+#include <QScrollArea>
+#include <QScrollBar>
 
 #include <ctime>
 #include <memory>
@@ -40,11 +45,11 @@ static const int SCREEN_OFFSET_Y = 198;
 class WatchyView : public QWidget {
 public:
     WatchyView(QWidget *parent = nullptr) : QWidget(parent) {
-        setFixedSize(BG_W, BG_H);
         QString bgPath = QCoreApplication::applicationDirPath() + "/../WatchySim/background.gif";
         if (!background.load(bgPath)) {
             background.load("WatchySim/background.gif");
         }
+        applyScale();
     }
 
     void setWatchy(Watchy *w) { watchy = w; }
@@ -55,13 +60,32 @@ public:
         update();
     }
 
+    void setScale(double s) {
+        if (s < 0.25) s = 0.25;
+        if (s > 3.0)  s = 3.0;
+        scale = s;
+        applyScale();
+        update();
+    }
+    double getScale() const { return scale; }
+
 protected:
+    void wheelEvent(QWheelEvent *e) override {
+        if (!(e->modifiers() & Qt::ControlModifier)) { QWidget::wheelEvent(e); return; }
+        int dy = e->angleDelta().y();
+        if (dy == 0) { e->ignore(); return; }
+        double factor = (dy > 0) ? 1.125 : 1.0 / 1.125;
+        setScale(scale * factor);
+        e->accept();
+    }
+
     void paintEvent(QPaintEvent *) override {
         QPainter p(this);
+        p.scale(scale, scale);
         if (!background.isNull()) {
             p.drawPixmap(0, 0, background);
         } else {
-            p.fillRect(rect(), Qt::black);
+            p.fillRect(0, 0, BG_W, BG_H, Qt::black);
         }
         if (watchy) {
             QImage img(watchy->display.getFramebuffer(),
@@ -72,8 +96,13 @@ protected:
     }
 
 private:
+    void applyScale() {
+        setFixedSize(int(BG_W * scale + 0.5), int(BG_H * scale + 0.5));
+    }
+
     QPixmap background;
     Watchy *watchy = nullptr;
+    double scale = 1.0;
 };
 
 class MainWindow : public QMainWindow {
@@ -82,14 +111,32 @@ public:
         loadFace(new WatchyMultiday());
 
         view = new WatchyView(this);
-        setCentralWidget(view);
         view->setWatchy(watchy.get());
+
+        auto *scroll = new QScrollArea(this);
+        scroll->setWidget(view);
+        scroll->setAlignment(Qt::AlignCenter);
+        scroll->setBackgroundRole(QPalette::Dark);
+        setCentralWidget(scroll);
+        resize(BG_W + 40, BG_H + 80);
 
         buildMenus();
         applyCurrentSystemTime();
         view->redraw();
 
         setWindowTitle("WatchySim");
+
+        auto *zoomIn  = new QShortcut(QKeySequence(QKeySequence::ZoomIn),  this);
+        auto *zoomIn2 = new QShortcut(QKeySequence("Ctrl+="),              this);
+        auto *zoomOut = new QShortcut(QKeySequence(QKeySequence::ZoomOut), this);
+        auto *zoomRst = new QShortcut(QKeySequence("Ctrl+0"),              this);
+        auto bump = [this](double factor) {
+            view->setScale(view->getScale() * factor);
+        };
+        connect(zoomIn,  &QShortcut::activated, this, [bump]{ bump(1.25); });
+        connect(zoomIn2, &QShortcut::activated, this, [bump]{ bump(1.25); });
+        connect(zoomOut, &QShortcut::activated, this, [bump]{ bump(1.0 / 1.25); });
+        connect(zoomRst, &QShortcut::activated, this, [this]{ view->setScale(1.0); });
 
         auto *timer = new QTimer(this);
         connect(timer, &QTimer::timeout, this, [this]() {
