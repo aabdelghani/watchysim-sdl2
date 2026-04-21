@@ -81,6 +81,8 @@ protected:
 
     void paintEvent(QPaintEvent *) override {
         QPainter p(this);
+        p.setRenderHint(QPainter::Antialiasing, false);
+        p.setRenderHint(QPainter::SmoothPixmapTransform, false);
         p.scale(scale, scale);
         if (!background.isNull()) {
             p.drawPixmap(0, 0, background);
