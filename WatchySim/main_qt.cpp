@@ -34,6 +34,7 @@
 #include "WatchFaces/Pokemon/Watchy_Pokemon.h"
 #include "WatchFaces/PowerShell/Watchy_PowerShell.h"
 #include "WatchFaces/Scene/Watchy_scene.h"
+#include "WatchFaces/Stats/Watchy_Stats.h"
 // Note: niobe.h declares class `Niobe`; Watchy_scene.h declares class `Scene`.
 #include "WatchFaces/Tetris/Watchy_Tetris.h"
 
@@ -295,6 +296,7 @@ private:
         addFace("Pokemon",       []{ return new WatchyPokemon(); });
         addFace("PowerShell",    []{ return new WatchyPowerShell(); });
         addFace("Scene",         []{ return new Scene(); });
+        addFace("Stats",         []{ return new WatchyStats(); });
         addFace("Tetris",        []{ return new WatchyTetris(); });
 
         auto *mTools = mb->addMenu("T&ools");
@@ -335,11 +337,13 @@ int main(int argc, char **argv) {
     // The Multiday face switches from animated mock to the static reference
     // snapshot when dumping, so diffs aren't drowned out by shuffle animation.
     extern bool g_multidayStaticDump;
+    extern bool g_statsStaticDump;
     for (int i = 1; i < argc; ++i) {
         if (QString(argv[i]) == "--dump" && i + 2 < argc) {
             std::unique_ptr<Watchy> w;
             QString face = argv[i+1];
             if      (face == "Multiday") { g_multidayStaticDump = true; w.reset(new WatchyMultiday()); }
+            else if (face == "Stats")    { g_statsStaticDump = true;    w.reset(new WatchyStats()); }
             else if (face == "7_SEG")    w.reset(new Watchy7SEG());
             else { fprintf(stderr, "Unknown face: %s\n", qPrintable(face)); return 2; }
             time_t t = time(nullptr);
