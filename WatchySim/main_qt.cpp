@@ -332,11 +332,14 @@ int main(int argc, char **argv) {
 
     // Headless dump mode: `--dump <face> <path.png>` renders a single face at
     // 200x200 and exits. Used for pixel-level comparison against references.
+    // The Multiday face switches from animated mock to the static reference
+    // snapshot when dumping, so diffs aren't drowned out by shuffle animation.
+    extern bool g_multidayStaticDump;
     for (int i = 1; i < argc; ++i) {
         if (QString(argv[i]) == "--dump" && i + 2 < argc) {
             std::unique_ptr<Watchy> w;
             QString face = argv[i+1];
-            if      (face == "Multiday") w.reset(new WatchyMultiday());
+            if      (face == "Multiday") { g_multidayStaticDump = true; w.reset(new WatchyMultiday()); }
             else if (face == "7_SEG")    w.reset(new Watchy7SEG());
             else { fprintf(stderr, "Unknown face: %s\n", qPrintable(face)); return 2; }
             time_t t = time(nullptr);

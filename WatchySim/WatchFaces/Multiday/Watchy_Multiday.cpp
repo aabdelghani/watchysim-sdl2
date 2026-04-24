@@ -6,11 +6,20 @@
 
 static MockState sim_mockMultiday;
 
+// Set by --dump path to render the static reference snapshot instead of the
+// animated mock — lets pixel-diffs against references/multyday.png ignore
+// shuffle/midline/day-dot animation noise.
+bool g_multidayStaticDump = false;
+
 WatchyMultiday::WatchyMultiday() {}
 
 void WatchyMultiday::drawWatchFace() {
     display.fillScreen(GxEPD_WHITE);
     drawWatchyChrome(display);
-    sim_mockMultiday.tick();
-    drawMultidayFace(display, 12, 32, sim_mockMultiday.currentMultiday());
+    if (g_multidayStaticDump) {
+        drawMultidayFace(display, 12, 32, referenceMultiday());
+    } else {
+        sim_mockMultiday.tick();
+        drawMultidayFace(display, 12, 32, sim_mockMultiday.currentMultiday());
+    }
 }
