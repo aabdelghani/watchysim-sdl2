@@ -340,13 +340,14 @@ int main(int argc, char **argv) {
     // snapshot when dumping, so diffs aren't drowned out by shuffle animation.
     extern bool g_multidayStaticDump;
     extern bool g_statsStaticDump;
+    extern bool g_goodMorningStaticDump;
     for (int i = 1; i < argc; ++i) {
         if (QString(argv[i]) == "--dump" && i + 2 < argc) {
             std::unique_ptr<Watchy> w;
             QString face = argv[i+1];
             if      (face == "Multiday")    { g_multidayStaticDump = true; w.reset(new WatchyMultiday()); }
             else if (face == "Stats")       { g_statsStaticDump = true;    w.reset(new WatchyStats()); }
-            else if (face == "GoodMorning") { w.reset(new WatchyGoodMorning()); }
+            else if (face == "GoodMorning") { g_goodMorningStaticDump = true; w.reset(new WatchyGoodMorning()); }
             else if (face == "7_SEG")       w.reset(new Watchy7SEG());
             else { fprintf(stderr, "Unknown face: %s\n", qPrintable(face)); return 2; }
             time_t t = time(nullptr);
