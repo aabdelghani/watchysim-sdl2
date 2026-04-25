@@ -29,6 +29,7 @@
 #include "WatchFaces/DrawTest/Watchy_Draw_Test.h"
 #include "WatchFaces/MacPaint/Watchy_MacPaint.h"
 #include "WatchFaces/Mario/Watchy_Mario.h"
+#include "WatchFaces/GoodMorning/Watchy_GoodMorning.h"
 #include "WatchFaces/Multiday/Watchy_Multiday.h"
 #include "WatchFaces/Niobe/niobe.h"
 #include "WatchFaces/Pokemon/Watchy_Pokemon.h"
@@ -291,6 +292,7 @@ private:
         addFace("DrawTest",      []{ return new WatchyDrawTest(); });
         addFace("MacPaint",      []{ return new WatchyMacPaint(); });
         addFace("Mario",         []{ return new WatchyMario(); });
+        addFace("GoodMorning",   []{ return new WatchyGoodMorning(); });
         addFace("Multiday",      []{ return new WatchyMultiday(); });
         addFace("Niobe",         []{ return new Niobe(); });
         addFace("Pokemon",       []{ return new WatchyPokemon(); });
@@ -342,9 +344,10 @@ int main(int argc, char **argv) {
         if (QString(argv[i]) == "--dump" && i + 2 < argc) {
             std::unique_ptr<Watchy> w;
             QString face = argv[i+1];
-            if      (face == "Multiday") { g_multidayStaticDump = true; w.reset(new WatchyMultiday()); }
-            else if (face == "Stats")    { g_statsStaticDump = true;    w.reset(new WatchyStats()); }
-            else if (face == "7_SEG")    w.reset(new Watchy7SEG());
+            if      (face == "Multiday")    { g_multidayStaticDump = true; w.reset(new WatchyMultiday()); }
+            else if (face == "Stats")       { g_statsStaticDump = true;    w.reset(new WatchyStats()); }
+            else if (face == "GoodMorning") { w.reset(new WatchyGoodMorning()); }
+            else if (face == "7_SEG")       w.reset(new Watchy7SEG());
             else { fprintf(stderr, "Unknown face: %s\n", qPrintable(face)); return 2; }
             time_t t = time(nullptr);
             struct tm tm_now; localtime_r(&t, &tm_now);
