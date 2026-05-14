@@ -23,21 +23,12 @@
 #include <ctime>
 #include <memory>
 
-#include "WatchFaces/7_SEG/Watchy_7_SEG.h"
-#include "WatchFaces/AnalogGabel/Watchy_AnalogGabel.h"
-#include "WatchFaces/DOS/Watchy_DOS.h"
-#include "WatchFaces/DrawTest/Watchy_Draw_Test.h"
-#include "WatchFaces/MacPaint/Watchy_MacPaint.h"
-#include "WatchFaces/Mario/Watchy_Mario.h"
+#include "WatchFaces/Biosync/Watchy_Biosync.h"
 #include "WatchFaces/GoodMorning/Watchy_GoodMorning.h"
+#include "WatchFaces/Hourly/Watchy_Hourly.h"
 #include "WatchFaces/Multiday/Watchy_Multiday.h"
-#include "WatchFaces/Niobe/niobe.h"
-#include "WatchFaces/Pokemon/Watchy_Pokemon.h"
-#include "WatchFaces/PowerShell/Watchy_PowerShell.h"
-#include "WatchFaces/Scene/Watchy_scene.h"
+#include "WatchFaces/Power/Watchy_Power.h"
 #include "WatchFaces/Stats/Watchy_Stats.h"
-// Note: niobe.h declares class `Niobe`; Watchy_scene.h declares class `Scene`.
-#include "WatchFaces/Tetris/Watchy_Tetris.h"
 
 static const int BG_W = 676;
 static const int BG_H = 676;
@@ -286,20 +277,12 @@ private:
         auto addFace = [&](const QString &label, std::function<Watchy*()> make) {
             mFace->addAction(label, this, [this, make]() { swapFace(make()); });
         };
-        addFace("7_SEG",         []{ return new Watchy7SEG(); });
-        addFace("AnalogGabel",   []{ return new WatchyAnalogGabel(); });
-        addFace("DOS",           []{ return new WatchyDOS(); });
-        addFace("DrawTest",      []{ return new WatchyDrawTest(); });
-        addFace("MacPaint",      []{ return new WatchyMacPaint(); });
-        addFace("Mario",         []{ return new WatchyMario(); });
+        addFace("Biosync",       []{ return new WatchyBiosync(); });
         addFace("GoodMorning",   []{ return new WatchyGoodMorning(); });
+        addFace("Hourly",        []{ return new WatchyHourly(); });
         addFace("Multiday",      []{ return new WatchyMultiday(); });
-        addFace("Niobe",         []{ return new Niobe(); });
-        addFace("Pokemon",       []{ return new WatchyPokemon(); });
-        addFace("PowerShell",    []{ return new WatchyPowerShell(); });
-        addFace("Scene",         []{ return new Scene(); });
+        addFace("Power",         []{ return new WatchyPower(); });
         addFace("Stats",         []{ return new WatchyStats(); });
-        addFace("Tetris",        []{ return new WatchyTetris(); });
 
         auto *mTools = mb->addMenu("T&ools");
         mTools->addAction("Screenshot...", this, [this]() {
@@ -341,14 +324,25 @@ int main(int argc, char **argv) {
     extern bool g_multidayStaticDump;
     extern bool g_statsStaticDump;
     extern bool g_goodMorningStaticDump;
+    extern bool g_hourlyStaticDump;
+    extern bool g_hourlyAllDotsDump;
+    extern bool g_biosyncStaticDump;
     for (int i = 1; i < argc; ++i) {
-        if (QString(argv[i]) == "--dump" && i + 2 < argc) {
+        QString flag = argv[i];
+        bool isDump    = (flag == "--dump");
+        bool isDumpAll = (flag == "--dump-all");
+        if ((isDump || isDumpAll) && i + 2 < argc) {
             std::unique_ptr<Watchy> w;
             QString face = argv[i+1];
             if      (face == "Multiday")    { g_multidayStaticDump = true; w.reset(new WatchyMultiday()); }
             else if (face == "Stats")       { g_statsStaticDump = true;    w.reset(new WatchyStats()); }
             else if (face == "GoodMorning") { g_goodMorningStaticDump = true; w.reset(new WatchyGoodMorning()); }
-            else if (face == "7_SEG")       w.reset(new Watchy7SEG());
+            else if (face == "Hourly")      {
+                if (isDumpAll) g_hourlyAllDotsDump = true;
+                else           g_hourlyStaticDump  = true;
+                w.reset(new WatchyHourly());
+            }
+            else if (face == "Biosync")     { g_biosyncStaticDump = true; w.reset(new WatchyBiosync()); }
             else { fprintf(stderr, "Unknown face: %s\n", qPrintable(face)); return 2; }
             time_t t = time(nullptr);
             struct tm tm_now; localtime_r(&t, &tm_now);
